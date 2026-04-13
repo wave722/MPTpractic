@@ -1,0 +1,21 @@
+-- AlterTable
+ALTER TABLE "student_profiles" ADD COLUMN "placementMetroMin" INTEGER;
+ALTER TABLE "student_profiles" ADD COLUMN "placementModuleIndex" TEXT;
+ALTER TABLE "student_profiles" ADD COLUMN "placementModuleName" TEXT;
+ALTER TABLE "student_profiles" ADD COLUMN "placementOrgAddress" TEXT;
+ALTER TABLE "student_profiles" ADD COLUMN "placementOrgEmail" TEXT;
+ALTER TABLE "student_profiles" ADD COLUMN "placementOrgHeadFio" TEXT;
+ALTER TABLE "student_profiles" ADD COLUMN "placementOrgHeadPosition" TEXT;
+ALTER TABLE "student_profiles" ADD COLUMN "placementOrgName" TEXT;
+ALTER TABLE "student_profiles" ADD COLUMN "placementOrgPhone" TEXT;
+ALTER TABLE "student_profiles" ADD COLUMN "placementOrgSupervisorFio" TEXT;
+ALTER TABLE "student_profiles" ADD COLUMN "placementPeriodEnd" DATETIME;
+ALTER TABLE "student_profiles" ADD COLUMN "placementPeriodStart" DATETIME;
+ALTER TABLE "student_profiles" ADD COLUMN "placementPracticeIndex" TEXT;
+ALTER TABLE "student_profiles" ADD COLUMN "placementPracticeName" TEXT;
+ALTER TABLE "student_profiles" ADD COLUMN "placementPracticeRespFio" TEXT;
+ALTER TABLE "student_profiles" ADD COLUMN "placementPracticeRespPhone" TEXT;
+ALTER TABLE "student_profiles" ADD COLUMN "placementPracticeRespPosition" TEXT;
+ALTER TABLE "student_profiles" ADD COLUMN "placementTechSupervisorFio" TEXT;
+ALTER TABLE "student_profiles" ADD COLUMN "placementTechSupervisorPhone" TEXT;
+ALTER TABLE "student_profiles" ADD COLUMN "placementTechSupervisorPosition" TEXT;

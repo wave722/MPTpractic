@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Роли и статусы хранятся как строки (SQLite). Допустимые значения — в backend/src/types/roles.ts
+model User {
+  id               Int      @id @default(autoincrement())
+  email            String   @unique
+  password         String
+  name             String
+  role             String   @default("METHODIST")
+  techSupervisorId Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  techSupervisor       TechSupervisor?  @relation(fields: [techSupervisorId], references: [id])
+  studentProfile       StudentProfile?  @relation("StudentProfileUser")
+  reviewedProfiles     StudentProfile[] @relation("ProfileReviewedBy")
+  linkedStudent        Student?         @relation("StudentUser")
+
+  @@map("users")
+}
+
+model Organization {
+  id                          Int      @id @default(autoincrement())
+  name                        String
+  address                     String
+  email                       String
+  phone                       String
+  supervisorOrgFio            String
+  supervisorOrgPosition       String
+  practiceResponsibleFio      String
+  practiceResponsiblePosition String
+  practiceResponsiblePhone    String
+  timeToNearestMetroMin       Int
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  assignments     StudentPracticeAssignment[]
+  studentProfiles StudentProfile[]
+
+  @@map("organizations")
+}
+
+model Module {
+  id          Int      @id @default(autoincrement())
+  moduleIndex String   @unique
+  moduleName  String
+  archived    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  practices Practice[]
+
+  @@map("modules")
+}
+
+model Practice {
+  id            Int      @id @default(autoincrement())
+  practiceIndex String   @unique
+  practiceName  String
+  moduleId      Int
+  periodStart   DateTime
+  periodEnd     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  module                        Module                       @relation(fields: [moduleId], references: [id])
+  assignments                   StudentPracticeAssignment[]
+  qualificationPracticeOffers   QualificationPracticeOffer[]
+
+  @@map("practices")
+}
+
+model Group {
+  id         Int      @id @default(autoincrement())
+  groupName  String   @unique
+  /// Индекс направления: Э, П, ИП — обычно часть названия до дефиса
+  groupIndex String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  students        Student[]
+  studentProfiles StudentProfile[]
+
+  @@map("groups")
+}
+
+/// Соответствие буквенного индекса группы (П, ИСиП…) тексту для отчётов, напр. «09.02.07 (П)». Редактируют методист и админ.
+model GroupIndexLabel {
+  id          Int      @id @default(autoincrement())
+  indexKey    String   @unique
+  exportLabel String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  qualificationPracticeOffers QualificationPracticeOffer[]
+
+  @@map("group_index_labels")
+}
+
+/// Вариант практики по графику для квалификации (свои даты; ссылка на учебную практику из справочника).
+model QualificationPracticeOffer {
+  id                Int      @id @default(autoincrement())
+  groupIndexLabelId Int
+  practiceId        Int
+  periodStart       DateTime
+  periodEnd         DateTime
+  note              String   @default("")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  groupIndexLabel GroupIndexLabel @relation(fields: [groupIndexLabelId], references: [id], onDelete: Cascade)
+  practice        Practice        @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+
+  @@map("qualification_practice_offers")
+}
+
+model TechSupervisor {
+  id        Int      @id @default(autoincrement())
+  fio       String
+  position  String
+  phone     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignments StudentPracticeAssignment[]
+  users       User[]
+
+  @@map("tech_supervisors")
+}
+
+model Student {
+  id        Int      @id @default(autoincrement())
+  fio       String
+  groupId   Int
+  userId    Int?     @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group       Group                       @relation(fields: [groupId], references: [id])
+  user        User?                       @relation("StudentUser", fields: [userId], references: [id])
+  assignments StudentPracticeAssignment[]
+
+  @@map("students")
+}
+
+model StudentProfile {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique
+  fio             String?
+  groupId         Int?
+  organizationId  Int?
+  phone           String?
+  reviewStatus    String    @default("DRAFT")
+  reviewedById    Int?
+  reviewedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Место практики и учебный план — вводит студент (текстом)
+  placementOrgName                String?
+  placementOrgAddress             String?
+  placementOrgEmail               String?
+  placementOrgPhone               String?
+  placementOrgHeadFio             String?
+  placementOrgHeadPosition        String?
+  placementPracticeRespFio        String?
+  placementPracticeRespPosition   String?
+  placementPracticeRespPhone      String?
+  placementMetroMin               Int?
+  placementPeriodStart            DateTime?
+  placementPeriodEnd              DateTime?
+  placementModuleIndex            String?
+  placementModuleName             String?
+  placementPracticeIndex          String?
+  placementPracticeName           String?
+  placementTechSupervisorFio      String?
+  placementTechSupervisorPosition String?
+  placementTechSupervisorPhone    String?
+  placementOrgSupervisorFio       String?
+
+  user         User          @relation("StudentProfileUser", fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy   User?         @relation("ProfileReviewedBy", fields: [reviewedById], references: [id])
+  group        Group?        @relation(fields: [groupId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
+  @@map("student_profiles")
+}
+
+model StudentPracticeAssignment {
+  id               Int      @id @default(autoincrement())
+  studentId        Int
+  practiceId       Int
+  organizationId   Int
+  techSupervisorId Int
+  orgSupervisorFio String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  student        Student        @relation(fields: [studentId], references: [id])
+  practice       Practice       @relation(fields: [practiceId], references: [id])
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  techSupervisor TechSupervisor @relation(fields: [techSupervisorId], references: [id])
+
+  @@unique([studentId, practiceId])
+  @@map("student_practice_assignments")
+}

@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mpt_postgres
+    environment:
+      POSTGRES_USER: mptuser
+      POSTGRES_PASSWORD: mptpassword
+      POSTGRES_DB: mptpractic
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: mpt_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@mpt.ru
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - '5050:80'
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
