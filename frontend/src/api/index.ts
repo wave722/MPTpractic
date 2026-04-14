@@ -73,13 +73,21 @@ export const modulesApi = {
   delete: (id: number) => api.delete(`/modules/${id}`),
 };
 
+export type PracticeWritePayload = {
+  practiceIndex: string;
+  practiceName: string;
+  moduleIndex: string;
+  moduleName: string;
+  periodStart: string;
+  periodEnd: string;
+};
+
 // Practices
 export const practicesApi = {
   getAll: () => api.get<Practice[]>('/practices'),
   getById: (id: number) => api.get<Practice>(`/practices/${id}`),
-  create: (data: Omit<Practice, 'id' | 'module' | 'createdAt' | 'updatedAt'>) =>
-    api.post<Practice>('/practices', data),
-  update: (id: number, data: Partial<Practice>) => api.put<Practice>(`/practices/${id}`, data),
+  create: (data: PracticeWritePayload) => api.post<Practice>('/practices', data),
+  update: (id: number, data: Partial<PracticeWritePayload>) => api.put<Practice>(`/practices/${id}`, data),
   delete: (id: number) => api.delete(`/practices/${id}`),
 };
 
@@ -181,12 +189,6 @@ function downloadReportBlob(
 
 // Справочник кодов индексов групп (отчёты)
 export const qualificationPracticeOffersApi = {
-  getLookups: () =>
-    api
-      .get<{ groupIndexLabels: GroupIndexLabel[]; practices: Practice[] }>(
-        '/qualification-practice-offers/lookups'
-      )
-      .then((r) => r.data),
   getAll: (params?: { groupIndexLabelId?: number }) =>
     api
       .get<QualificationPracticeOffer[]>('/qualification-practice-offers', { params })
@@ -222,7 +224,6 @@ export const groupIndexLabelsApi = {
 
 // Reports
 export const reportsApi = {
-  getGroupIndices: () => api.get<string[]>('/reports/group-indices').then((r) => r.data),
   exportXlsx: (
     organizationId?: number,
     opts?: { groupId?: number; groupIndex?: string }

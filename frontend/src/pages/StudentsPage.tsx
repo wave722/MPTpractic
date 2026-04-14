@@ -2,7 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { GraduationCap, Plus, Pencil, Trash2, ClipboardList, Filter } from 'lucide-react';
-import { studentsApi, groupsApi, organizationsApi, practicesApi, techSupervisorsApi, assignmentsApi } from '@/api';
+import {
+  studentsApi,
+  groupsApi,
+  organizationsApi,
+  practicesApi,
+  techSupervisorsApi,
+  assignmentsApi,
+  groupIndexLabelsApi,
+} from '@/api';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { FormField } from '@/components/ui/FormField';
@@ -10,9 +18,10 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageLoader } from '@/components/ui/Spinner';
 import { useAuthStore } from '@/store/auth';
-import type { Student, Group, Organization, Practice, TechSupervisor } from '@/types';
+import type { Student, Group, Organization, Practice, TechSupervisor, GroupIndexLabel } from '@/types';
+import { exportLabelForIndex, sortedAdminGroupIndexKeys } from '@/lib/groupIndexLabelDisplay';
 import toast from 'react-hot-toast';
-import { groupsMatchingIndex, uniqueSortedGroupIndices } from '@/lib/groupIndex';
+import { groupsMatchingIndex } from '@/lib/groupIndex';
 
 export function StudentsPage() {
   const qc = useQueryClient();
@@ -53,7 +62,12 @@ export function StudentsPage() {
     queryFn: () => groupsApi.getAll().then((r) => r.data),
   });
 
-  const groupIndices = useMemo(() => uniqueSortedGroupIndices(groups), [groups]);
+  const { data: groupIndexLabels = [] } = useQuery<GroupIndexLabel[]>({
+    queryKey: ['group-index-labels'],
+    queryFn: () => groupIndexLabelsApi.getAll(),
+  });
+
+  const groupIndices = useMemo(() => sortedAdminGroupIndexKeys(groupIndexLabels), [groupIndexLabels]);
   const groupsForFilterSelect = useMemo(
     () => groupsMatchingIndex(groups, filterGroupIndex),
     [groups, filterGroupIndex]
@@ -154,7 +168,7 @@ export function StudentsPage() {
               <option value="">Все направления</option>
               {groupIndices.map((idx) => (
                 <option key={idx} value={idx}>
-                  Индекс: {idx}
+                  {exportLabelForIndex(groupIndexLabels, idx)}
                 </option>
               ))}
             </select>
@@ -282,7 +296,7 @@ export function StudentsPage() {
               <option value="">Все направления</option>
               {groupIndices.map((idx) => (
                 <option key={idx} value={idx}>
-                  {idx}
+                  {exportLabelForIndex(groupIndexLabels, idx)}
                 </option>
               ))}
             </select>

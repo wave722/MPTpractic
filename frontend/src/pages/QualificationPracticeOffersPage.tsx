@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CalendarRange, Plus, Pencil, Trash2 } from 'lucide-react';
-import { qualificationPracticeOffersApi, groupIndexLabelsApi } from '@/api';
+import { qualificationPracticeOffersApi, groupIndexLabelsApi, practicesApi } from '@/api';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { FormField } from '@/components/ui/FormField';
@@ -9,7 +9,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageLoader } from '@/components/ui/Spinner';
 import { useAuthStore } from '@/store/auth';
-import type { QualificationPracticeOffer } from '@/types';
+import type { QualificationPracticeOffer, Practice } from '@/types';
 import { toDateInput } from '@/lib/studentProfilePayload';
 import toast from 'react-hot-toast';
 
@@ -43,12 +43,10 @@ export function QualificationPracticeOffersPage() {
     queryFn: () => groupIndexLabelsApi.getAll(),
   });
 
-  const { data: practicePack, isLoading: practicesLoading } = useQuery({
-    queryKey: ['qualification-practice-offers-lookups'],
-    queryFn: () => qualificationPracticeOffersApi.getLookups(),
+  const { data: practices = [], isLoading: practicesLoading } = useQuery<Practice[]>({
+    queryKey: ['practices'],
+    queryFn: () => practicesApi.getAll().then((r) => r.data),
   });
-
-  const practices = practicePack?.practices ?? [];
 
   const { data: offers = [], isLoading: offersLoading } = useQuery({
     queryKey: ['qualification-practice-offers', labelFilter],
@@ -189,7 +187,7 @@ export function QualificationPracticeOffersPage() {
             <option value="">Все направления</option>
             {labels.map((l) => (
               <option key={l.id} value={String(l.id)}>
-                {l.exportLabel} ({l.indexKey})
+                {l.exportLabel}
               </option>
             ))}
           </select>
@@ -201,7 +199,8 @@ export function QualificationPracticeOffersPage() {
         )}
         {practices.length === 0 && (
           <p className="text-sm text-amber-700">
-            В справочнике нет практик — их добавляет администратор в разделе «Практики».
+            В справочнике нет практик — сначала заведите их во вкладке «Практики» (при необходимости — модуль во вкладке
+            «Модули»).
           </p>
         )}
       </div>
@@ -276,7 +275,7 @@ export function QualificationPracticeOffersPage() {
         isOpen={modalOpen}
         onClose={closeModal}
         title={editItem ? 'Изменить вариант' : 'Новый вариант практики'}
-        size="md"
+        size="lg"
       >
         <form onSubmit={onSubmitModal} className="space-y-4">
           <FormField label="Квалификация (направление)" required>
@@ -288,12 +287,16 @@ export function QualificationPracticeOffersPage() {
               <option value="">Выберите квалификацию…</option>
               {labels.map((l) => (
                 <option key={l.id} value={String(l.id)}>
-                  {l.exportLabel} ({l.indexKey})
+                  {l.exportLabel}
                 </option>
               ))}
             </select>
           </FormField>
-          <FormField label="Практика из учебного плана" required>
+          <FormField
+            label="Практика из справочника"
+            required
+            hint="Тот же список, что на вкладке «Практики» (учебный план)."
+          >
             <select
               className="input"
               value={form.practiceId}
@@ -302,7 +305,7 @@ export function QualificationPracticeOffersPage() {
               <option value="">Выберите практику…</option>
               {practices.map((p) => (
                 <option key={p.id} value={String(p.id)}>
-                  {p.practiceIndex} — {p.practiceName} ({p.module.moduleIndex})
+                  {p.practiceIndex} — {p.practiceName} · {p.module.moduleIndex} {p.module.moduleName}
                 </option>
               ))}
             </select>

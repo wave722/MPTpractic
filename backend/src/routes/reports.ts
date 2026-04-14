@@ -26,33 +26,15 @@ async function groupIdsMatchingEffectiveIndex(index: string): Promise<number[]> 
   return groups.filter((g) => effectiveGroupIndex(g) === trimmed).map((g) => g.id);
 }
 
-/** Уникальные индексы направлений из БД (с учётом эффективного индекса); для методиста — только по его назначениям. */
-router.get('/group-indices', async (req: AuthRequest, res: Response): Promise<void> => {
-  const roleWhere = methodistAssignmentWhere(req);
-  const set = new Set<string>();
-
-  if (req.user?.role === 'METHODIST') {
-    const rows = await prisma.studentPracticeAssignment.findMany({
-      where: roleWhere,
-      select: {
-        student: { select: { group: { select: { groupName: true, groupIndex: true } } } },
-      },
-    });
-    for (const row of rows) {
-      const idx = effectiveGroupIndex(row.student.group);
-      if (idx) set.add(idx);
-    }
-  } else {
-    const groups = await prisma.group.findMany({
-      select: { groupName: true, groupIndex: true },
-    });
-    for (const g of groups) {
-      const idx = effectiveGroupIndex(g);
-      if (idx) set.add(idx);
-    }
-  }
-
-  res.json([...set].sort((a, b) => a.localeCompare(b, 'ru')));
+/** Индексы направлений из справочника администратора (group_index_labels), без выведенных из названий групп «лишних» букв. */
+router.get('/group-indices', async (_req: AuthRequest, res: Response): Promise<void> => {
+  const rows = await prisma.groupIndexLabel.findMany({
+    select: { indexKey: true },
+  });
+  const keys = [...new Set(rows.map((r) => r.indexKey.trim()).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, 'ru')
+  );
+  res.json(keys);
 });
 
 router.get('/export', async (req: AuthRequest, res: Response): Promise<void> => {

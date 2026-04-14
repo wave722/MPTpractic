@@ -137,7 +137,7 @@ export function ModulesPage() {
         </div>
       </div>
 
-      <Modal isOpen={modalOpen} onClose={closeModal} title={editItem ? 'Редактировать модуль' : 'Новый модуль'}>
+      <Modal isOpen={modalOpen} onClose={closeModal} title={editItem ? 'Редактировать модуль' : 'Новый модуль'} size="lg">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <FormField label="Индекс модуля" error={errors.moduleIndex?.message} required>
             <input
@@ -146,11 +146,17 @@ export function ModulesPage() {
               placeholder="МДК.01.01"
             />
           </FormField>
-          <FormField label="Наименование" error={errors.moduleName?.message} required>
-            <input
+          <FormField
+            label="Полное наименование модуля"
+            error={errors.moduleName?.message}
+            required
+            hint="Можно указать длинное название, например с кодом ПП.01.02…"
+          >
+            <textarea
               {...register('moduleName', { required: 'Наименование обязательно' })}
-              className={`input ${errors.moduleName ? 'input-error' : ''}`}
-              placeholder="Название модуля"
+              rows={4}
+              className={`input min-h-[5.5rem] resize-y ${errors.moduleName ? 'input-error' : ''}`}
+              placeholder="Полное название модуля по учебному плану"
             />
           </FormField>
           <div className="flex gap-3 justify-end pt-2">

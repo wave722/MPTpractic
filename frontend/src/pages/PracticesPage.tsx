@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { BookOpen, Plus, Pencil, Trash2, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { practicesApi, modulesApi } from '@/api';
+import { practicesApi } from '@/api';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { FormField } from '@/components/ui/FormField';
@@ -12,13 +12,14 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageLoader } from '@/components/ui/Spinner';
 import { useAuthStore } from '@/store/auth';
-import type { Practice, Module } from '@/types';
+import type { Practice } from '@/types';
 import toast from 'react-hot-toast';
 
 interface PracticeForm {
   practiceIndex: string;
   practiceName: string;
-  moduleId: number;
+  moduleIndex: string;
+  moduleName: string;
   periodStart: string;
   periodEnd: string;
 }
@@ -35,24 +36,29 @@ export function PracticesPage() {
     queryFn: () => practicesApi.getAll().then((r) => r.data),
   });
 
-  const { data: modules = [] } = useQuery<Module[]>({
-    queryKey: ['modules'],
-    queryFn: () => modulesApi.getAll().then((r) => r.data),
-  });
-
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<PracticeForm>();
   const periodStart = watch('periodStart');
 
   const createMut = useMutation({
     mutationFn: practicesApi.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['practices'] }); toast.success('Практика создана'); closeModal(); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['practices'] });
+      qc.invalidateQueries({ queryKey: ['modules'] });
+      toast.success('Практика создана');
+      closeModal();
+    },
     onError: (e: { response?: { data?: { error?: string } } }) =>
       toast.error(e.response?.data?.error || 'Ошибка создания'),
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<PracticeForm> }) => practicesApi.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['practices'] }); toast.success('Практика обновлена'); closeModal(); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['practices'] });
+      qc.invalidateQueries({ queryKey: ['modules'] });
+      toast.success('Практика обновлена');
+      closeModal();
+    },
   });
 
   const deleteMut = useMutation({
@@ -67,7 +73,8 @@ export function PracticesPage() {
     reset({
       practiceIndex: p.practiceIndex,
       practiceName: p.practiceName,
-      moduleId: p.moduleId,
+      moduleIndex: p.module.moduleIndex,
+      moduleName: p.module.moduleName,
       periodStart: p.periodStart.split('T')[0],
       periodEnd: p.periodEnd.split('T')[0],
     });
@@ -75,12 +82,17 @@ export function PracticesPage() {
   };
 
   const onSubmit = (form: PracticeForm) => {
-    const data = { ...form, moduleId: Number(form.moduleId) };
+    const data = {
+      practiceIndex: form.practiceIndex.trim(),
+      practiceName: form.practiceName.trim(),
+      moduleIndex: form.moduleIndex.trim(),
+      moduleName: form.moduleName.trim(),
+      periodStart: form.periodStart,
+      periodEnd: form.periodEnd,
+    };
     if (editItem) updateMut.mutate({ id: editItem.id, data });
     else createMut.mutate(data);
   };
-
-  const activeModules = modules.filter((m) => !m.archived);
 
   if (isLoading) return <PageLoader />;
 
@@ -166,23 +178,38 @@ export function PracticesPage() {
                 placeholder="ПП.01.01"
               />
             </FormField>
-            <FormField label="Модуль" error={errors.moduleId?.message} required>
-              <select
-                {...register('moduleId', { required: 'Выберите модуль' })}
-                className={`input ${errors.moduleId ? 'input-error' : ''}`}
-              >
-                <option value="">Выберите модуль</option>
-                {activeModules.map((m) => (
-                  <option key={m.id} value={m.id}>{m.moduleIndex} — {m.moduleName}</option>
-                ))}
-              </select>
+            <FormField label="Индекс модуля" error={errors.moduleIndex?.message} required>
+              <input
+                {...register('moduleIndex', { required: 'Укажите индекс модуля' })}
+                className={`input font-mono ${errors.moduleIndex ? 'input-error' : ''}`}
+                placeholder="МДК.01.01"
+              />
             </FormField>
           </div>
-          <FormField label="Название практики" error={errors.practiceName?.message} required>
-            <input
+          <FormField
+            label="Полное наименование модуля"
+            error={errors.moduleName?.message}
+            required
+            hint="Вводится вручную: новый индекс создаёт запись в «Модули». Если индекс уже есть, к практике подставится этот модуль из справочника (название в справочнике не меняется — правка во вкладке «Модули»)."
+          >
+            <textarea
+              {...register('moduleName', { required: 'Укажите наименование модуля' })}
+              rows={3}
+              className={`input min-h-[4.5rem] resize-y ${errors.moduleName ? 'input-error' : ''}`}
+              placeholder="Как в учебном плане для этой практики"
+            />
+          </FormField>
+          <FormField
+            label="Полное название практики"
+            error={errors.practiceName?.message}
+            required
+            hint="Допускается длинная строка с индексом, например ПП.01.02 …"
+          >
+            <textarea
               {...register('practiceName', { required: 'Обязательное поле' })}
-              className={`input ${errors.practiceName ? 'input-error' : ''}`}
-              placeholder="Производственная практика"
+              rows={4}
+              className={`input min-h-[5.5rem] resize-y ${errors.practiceName ? 'input-error' : ''}`}
+              placeholder="Название практики по учебному плану"
             />
           </FormField>
           <div className="grid grid-cols-2 gap-4">

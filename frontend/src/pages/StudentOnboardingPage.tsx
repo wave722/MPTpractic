@@ -15,8 +15,8 @@ import {
   profileToFormDefaults,
   formValuesToPayload,
 } from '@/lib/studentProfilePayload';
-import { groupsMatchingIndex, uniqueSortedGroupIndices } from '@/lib/groupIndex';
-import { exportLabelForIndex } from '@/lib/groupIndexLabelDisplay';
+import { effectiveGroupIndex, groupsMatchingIndex } from '@/lib/groupIndex';
+import { exportLabelForIndex, sortedAdminGroupIndexKeys } from '@/lib/groupIndexLabelDisplay';
 
 function fmtRuYmd(ymd: string): string {
   const [y, m, d] = ymd.split('-').map(Number);
@@ -58,9 +58,12 @@ export function StudentOnboardingPage() {
   const [selectedScheduleOfferId, setSelectedScheduleOfferId] = useState('');
   const lastAppliedOfferId = useRef<string | null>(null);
 
-  const groups = lookups?.groups ?? [];
-  const groupIndexLabels = lookups?.groupIndexLabels ?? [];
-  const anketaIndices = useMemo(() => uniqueSortedGroupIndices(groups), [groups]);
+  const groups = useMemo(() => lookups?.groups ?? [], [lookups?.groups]);
+  const groupIndexLabels = useMemo(
+    () => lookups?.groupIndexLabels ?? [],
+    [lookups?.groupIndexLabels]
+  );
+  const anketaIndices = useMemo(() => sortedAdminGroupIndexKeys(groupIndexLabels), [groupIndexLabels]);
   const filteredAnketaGroups = useMemo(
     () => groupsMatchingIndex(groups, anketaGroupIndex),
     [groups, anketaGroupIndex]
@@ -106,8 +109,11 @@ export function StudentOnboardingPage() {
   useEffect(() => {
     if (!lookups?.groups?.length || !profile?.groupId) return;
     const g = lookups.groups.find((x) => x.id === profile.groupId);
-    if (g?.groupIndex) setAnketaGroupIndex(g.groupIndex);
-  }, [profile?.groupId, lookups?.groups]);
+    if (!g) return;
+    const idx = effectiveGroupIndex(g);
+    const allowed = new Set(sortedAdminGroupIndexKeys(groupIndexLabels));
+    setAnketaGroupIndex(idx && allowed.has(idx) ? idx : '');
+  }, [profile?.groupId, lookups?.groups, lookups?.groupIndexLabels]);
 
   useEffect(() => {
     if (!anketaGroupIndex.trim()) return;

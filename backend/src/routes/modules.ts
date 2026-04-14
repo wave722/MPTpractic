@@ -3,7 +3,6 @@ import { body, validationResult } from 'express-validator';
 import prisma from '../utils/prisma';
 import {
   authenticate,
-  requireNotMethodist,
   requireNotStudent,
   requireMethodist,
   requireAdmin,
@@ -13,7 +12,6 @@ import {
 const router = Router();
 router.use(authenticate);
 router.use(requireNotStudent);
-router.use(requireNotMethodist);
 
 router.get('/', async (_req: AuthRequest, res: Response): Promise<void> => {
   const modules = await prisma.module.findMany({ orderBy: { moduleIndex: 'asc' } });

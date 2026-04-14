@@ -8,17 +8,6 @@ const router = Router();
 router.use(authenticate);
 router.use(requireModerator);
 
-router.get('/lookups', async (_req: AuthRequest, res: Response): Promise<void> => {
-  const [groupIndexLabels, practices] = await Promise.all([
-    prisma.groupIndexLabel.findMany({ orderBy: { indexKey: 'asc' } }),
-    prisma.practice.findMany({
-      include: { module: true },
-      orderBy: { practiceIndex: 'asc' },
-    }),
-  ]);
-  res.json({ groupIndexLabels, practices });
-});
-
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
   const raw = req.query.groupIndexLabelId;
   const where =

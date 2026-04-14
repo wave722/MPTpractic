@@ -8,8 +8,8 @@ import { PageLoader } from '@/components/ui/Spinner';
 import type { Organization, Practice, Assignment, Group, GroupIndexLabel } from '@/types';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/auth';
-import { groupsMatchingIndex, uniqueSortedGroupIndices } from '@/lib/groupIndex';
-import { exportLabelForIndex } from '@/lib/groupIndexLabelDisplay';
+import { groupsMatchingIndex } from '@/lib/groupIndex';
+import { exportLabelForIndex, sortedAdminGroupIndexKeys } from '@/lib/groupIndexLabelDisplay';
 
 const studentBasesColumns = [
   '№ п/п',
@@ -125,12 +125,10 @@ export function ReportsPage() {
     queryFn: () => groupIndexLabelsApi.getAll(),
   });
 
-  const { data: groupIndicesFromDb, isSuccess: groupIndicesLoaded } = useQuery({
-    queryKey: ['reports', 'group-indices'],
-    queryFn: () => reportsApi.getGroupIndices(),
-  });
-  const groupIndicesFallback = useMemo(() => uniqueSortedGroupIndices(groups), [groups]);
-  const groupIndicesForSelect = groupIndicesLoaded ? (groupIndicesFromDb ?? []) : groupIndicesFallback;
+  const groupIndicesForSelect = useMemo(
+    () => sortedAdminGroupIndexKeys(groupIndexLabels),
+    [groupIndexLabels]
+  );
 
   const groupsForStudentBasesSelect = useMemo(
     () => groupsMatchingIndex(groups, studentBasesGroupIndex),
@@ -257,7 +255,8 @@ export function ReportsPage() {
                 ))}
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                Подписи задаются в разделе «Коды индексов групп»; без записи показывается сам индекс.
+                Список направлений берётся из раздела «Коды индексов групп»; добавьте туда нужный индекс, чтобы
+                он появился здесь.
               </p>
             </div>
             <div>
